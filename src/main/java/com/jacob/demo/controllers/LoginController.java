@@ -50,7 +50,6 @@ public class LoginController {
 		return false;
 	}
 
-	//	TODO: auto logout
 	@GetMapping("/dummy")
 	public String dummy(String username) {
 		var ref = new Object() {
@@ -60,9 +59,30 @@ public class LoginController {
 		optionalUser
 				.filter(User::isLoggedIn)
 				.ifPresentOrElse(
-						value -> ref.message = "Welcome " + value.getUsername(),
+						value -> {
+							ref.message = "Welcome " + value.getUsername();
+							new java.util.Timer().schedule(
+									new java.util.TimerTask() {
+										@Override
+										public void run() {
+											logout(value.getUsername());
+										}
+									},
+									60000
+							);
+						},
 						() -> ref.message = "Not Logged in");
 		return ref.message;
+	}
+
+	@SuppressWarnings("OptionalGetWithoutIsPresent")
+	private void logout(String username) {
+		Optional<User> optionalUser = userRepository.findById(username);
+		userRepository.deleteById(username);
+		User user = optionalUser
+				.get()
+				.setLoggedIn(false);
+		userRepository.save(user);
 	}
 
 	@GetMapping("users")
