@@ -13,6 +13,7 @@ import java.util.Optional;
 @RestController("/")
 public class LoginController {
 
+	@SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
 	@Autowired
 	UserRepository userRepository;
 
@@ -33,7 +34,7 @@ public class LoginController {
 	}
 
 
-	@GetMapping("login")
+	@GetMapping("/login")
 	public boolean login(User user) {
 		Optional<User> optionalUser = userRepository.findById(user.getUsername());
 		boolean isValidUser = optionalUser
@@ -85,7 +86,24 @@ public class LoginController {
 		userRepository.save(user);
 	}
 
-	@GetMapping("users")
+	@GetMapping("/add-user")
+	public String saveUser(User user) {
+		if (!isPresent(user)) {
+			if ((user.getUsername() != null) && (user.getPassword() != null)) {
+				userRepository.save(user);
+				return "Saved";
+			} else {
+				return "Invalid parameters";
+			}
+		}
+		return "Already present";
+	}
+
+	public boolean isPresent(User user) {
+		return userRepository.findById(user.getUsername()).isPresent();
+	}
+
+	@GetMapping("/users")
 	public List<User> getAllUsers() {
 		return userRepository.findAll();
 	}
