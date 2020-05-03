@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
 import java.util.Optional;
 
 @RestController("/")
@@ -47,5 +48,25 @@ public class LoginController {
 			return true;
 		}
 		return false;
+	}
+
+	//	TODO: auto logout
+	@GetMapping("/dummy")
+	public String dummy(String username) {
+		var ref = new Object() {
+			String message;
+		};
+		Optional<User> optionalUser = userRepository.findById(username);
+		optionalUser
+				.filter(User::isLoggedIn)
+				.ifPresentOrElse(
+						value -> ref.message = "Welcome " + value.getUsername(),
+						() -> ref.message = "Not Logged in");
+		return ref.message;
+	}
+
+	@GetMapping("users")
+	public List<User> getAllUsers() {
+		return userRepository.findAll();
 	}
 }
