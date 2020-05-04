@@ -3,8 +3,8 @@ package com.jacob.demo.controllers;
 import com.jacob.demo.models.User;
 import com.jacob.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -35,24 +35,23 @@ public class LoginController {
 
 
 	@GetMapping("/login")
-	public boolean login(User user) {
+	public String login(@RequestBody User user) {
 		Optional<User> optionalUser = userRepository.findById(user.getUsername());
 		boolean isValidUser = optionalUser
 				.filter(value -> user.getPassword().equals(value.getPassword()))
 				.isPresent();
 		if (isValidUser) {
-			userRepository.deleteById(user.getUsername());
-			User newUser = optionalUser
+			User updatedUser = optionalUser
 					.get()
 					.setLoggedIn(true);
-			userRepository.save(newUser);
-			return true;
+			userRepository.save(updatedUser);
+			return "Logged in";
 		}
-		return false;
+		return "No User found";
 	}
 
-	@GetMapping("/dummy")
-	public String dummy(String username) {
+	@GetMapping("/dummy-{username}")
+	public String dummy(@PathVariable("username") String username) {
 		var ref = new Object() {
 			String message;
 		};
@@ -76,18 +75,8 @@ public class LoginController {
 		return ref.message;
 	}
 
-	@SuppressWarnings("OptionalGetWithoutIsPresent")
-	private void logout(String username) {
-		Optional<User> optionalUser = userRepository.findById(username);
-		userRepository.deleteById(username);
-		User user = optionalUser
-				.get()
-				.setLoggedIn(false);
-		userRepository.save(user);
-	}
-
-	@GetMapping("/add-user")
-	public String saveUser(User user) {
+	@PostMapping(path = "/add-user", consumes = MediaType.APPLICATION_JSON_VALUE)
+	public String saveUser(@RequestBody User user) {
 		if (!isPresent(user)) {
 			if ((user.getUsername() != null) && (user.getPassword() != null)) {
 				userRepository.save(user);
@@ -101,6 +90,24 @@ public class LoginController {
 
 	public boolean isPresent(User user) {
 		return userRepository.findById(user.getUsername()).isPresent();
+	}
+
+	@GetMapping("/logout-{username}")
+	private String logout(@PathVariable("username") String username) {
+		Optional<User> optionalUser = userRepository.findById(username);
+		if (optionalUser.isPresent()) {
+			if (optionalUser.get().isLoggedIn()) {
+				User updatedUser = optionalUser
+						.get()
+						.setLoggedIn(false);
+				userRepository.save(updatedUser);
+				return "Logged Out";
+			} else {
+				return "Not Logged In";
+			}
+		} else {
+			return "No User found";
+		}
 	}
 
 	@GetMapping("/users")
